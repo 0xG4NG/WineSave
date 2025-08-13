@@ -1,0 +1,29 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "game-save-backup",
+  "outputfilename": "GameSaveBackup",
+  "frontend": {
+    "dir": "./frontend",
+    "install": "npm install",
+    "build": "npm run build",
+    "dev": "npm run dev",
+    "viteConfigFile": "./vite.config.js"
+  },
+  "backend": {
+    "dir": "./app"
+  },
+  "author": {
+    "name": "Game Save Backup",
+    "email": "contact@gamesavebackup.com"
+  },
+  "info": {
+    "companyName": "Game Save Backup",
+    "productName": "Game Save Backup Manager",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2025, Game Save Backup",
+    "comments": "Sistema de backup automático para partidas guardadas de juegos"
+  },
+  "nsisType": "multiple",
+  "obfuscated": false,
+  "garbleargs": ""
+}
