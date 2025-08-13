@@ -37,7 +37,7 @@
         </div>
       </div>
 
-      <!-- Games Grid -->
+      <!-- Games Section -->
       <div class="games-section">
         <div class="section-header">
           <h2>Juegos Detectados</h2>
@@ -117,129 +117,6 @@
       </div>
     </main>
 
-    <!-- Add Game Modal -->
-    <div v-if="showAddGame" class="modal-overlay" @click="showAddGame = false">
-      <div class="modal" @click.stop>
-        <div class="modal-header">
-          <h2>Agregar Juego Personalizado</h2>
-          <button @click="showAddGame = false" class="close-btn">✕</button>
-        </div>
-        <div class="modal-content">
-          <form @submit.prevent="addCustomGame">
-            <div class="form-group">
-              <label>Nombre del Juego</label>
-              <input v-model="newGame.name" type="text" required class="form-input" />
-            </div>
-            <div class="form-group">
-              <label>Ruta de Guardado</label>
-              <input v-model="newGame.path" type="text" required class="form-input" />
-              <small>Ejemplo: %USERPROFILE%/Documents/MiJuego/saves</small>
-            </div>
-            <div class="form-group">
-              <label>Patrones de Archivos</label>
-              <input v-model="newGame.patterns" type="text" class="form-input" />
-              <small>Ejemplo: *.sav,*.save,*.dat (separados por comas)</small>
-            </div>
-            <div class="form-actions">
-              <button type="button" @click="showAddGame = false" class="btn btn-secondary">
-                Cancelar
-              </button>
-              <button type="submit" class="btn btn-primary">
-                Agregar Juego
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div v-if="showSettings" class="modal-overlay" @click="showSettings = false">
-      <div class="modal" @click.stop>
-        <div class="modal-header">
-          <h2>Configuración</h2>
-          <button @click="showSettings = false" class="close-btn">✕</button>
-        </div>
-        <div class="modal-content">
-          <form @submit.prevent="saveSettings">
-            <div class="form-group">
-              <label>Directorio de Backups</label>
-              <input v-model="config.backup_dir" type="text" class="form-input" />
-            </div>
-            <div class="form-group">
-              <label>Máximo de Backups por Juego</label>
-              <input v-model="config.max_backups" type="number" min="1" max="50" class="form-input" />
-            </div>
-            <div class="form-group">
-              <label class="checkbox-label">
-                <input v-model="config.compression_enabled" type="checkbox" />
-                Habilitar Compresión ZIP
-              </label>
-            </div>
-            <div class="form-group">
-              <label class="checkbox-label">
-                <input v-model="config.auto_backup" type="checkbox" />
-                Backup Automático
-              </label>
-            </div>
-            <div class="form-actions">
-              <button type="button" @click="showSettings = false" class="btn btn-secondary">
-                Cancelar
-              </button>
-              <button type="submit" class="btn btn-primary">
-                Guardar Configuración
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Game Details Modal -->
-    <div v-if="selectedGame" class="modal-overlay" @click="selectedGame = null">
-      <div class="modal large" @click.stop>
-        <div class="modal-header">
-          <h2>{{ selectedGame.name }} - Detalles</h2>
-          <button @click="selectedGame = null" class="close-btn">✕</button>
-        </div>
-        <div class="modal-content">
-          <div class="details-grid">
-            <div class="detail-section">
-              <h3>Información General</h3>
-              <div class="detail-item">
-                <strong>ID:</strong> {{ selectedGame.id }}
-              </div>
-              <div class="detail-item">
-                <strong>Plataforma:</strong> {{ selectedGame.platform }}
-              </div>
-              <div class="detail-item">
-                <strong>Archivos:</strong> {{ selectedGame.file_count }}
-              </div>
-              <div class="detail-item">
-                <strong>Tamaño Total:</strong> {{ formatSize(selectedGame.total_size) }}
-              </div>
-            </div>
-            <div class="detail-section">
-              <h3>Rutas de Guardado</h3>
-              <ul class="paths-list">
-                <li v-for="path in selectedGame.save_paths" :key="path">
-                  {{ path }}
-                </li>
-              </ul>
-            </div>
-            <div class="detail-section">
-              <h3>Patrones de Archivos</h3>
-              <div class="patterns-list">
-                <span v-for="pattern in selectedGame.patterns" :key="pattern" class="pattern-tag">
-                  {{ pattern }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Toast Notifications -->
     <div class="toast-container">
       <div 
@@ -257,14 +134,15 @@
 
 <script>
 import { ref, onMounted, computed } from 'vue'
-import { ScanGames, GetGameList, CreateBackup, AddCustomGame, GetConfig, UpdateConfig, RemoveGame } from '../wailsjs/go/main/App'
+// Comentar temporalmente las importaciones de Wails
+// import { ScanGames, GetGameList, CreateBackup, AddCustomGame, GetConfig, UpdateConfig, RemoveGame } from '../wailsjs/go/main/App'
 
 export default {
   name: 'App',
   setup() {
     // Reactive data
     const games = ref([])
-    const loading = ref(true)
+    const loading = ref(false)
     const scanning = ref(false)
     const backingUp = ref([])
     const showAddGame = ref(false)
@@ -293,87 +171,52 @@ export default {
       return games.value.reduce((sum, game) => sum + (game.total_size || 0), 0)
     })
 
-    // Methods
+    // Métodos temporales (placeholder)
     const loadGames = async () => {
-      try {
-        loading.value = true
-        const gameList = await GetGameList()
-        games.value = gameList || []
-      } catch (error) {
-        showToast('Error cargando juegos: ' + error, 'error')
-      } finally {
-        loading.value = false
-      }
-    }
-
-    const loadConfig = async () => {
-      try {
-        const cfg = await GetConfig()
-        config.value = cfg
-      } catch (error) {
-        console.error('Error cargando configuración:', error)
-      }
+      loading.value = true
+      // Simulamos algunos juegos de prueba
+      games.value = [
+        {
+          id: 'test-game-1',
+          name: 'Juego de Prueba 1',
+          platform: 'steam',
+          file_count: 5,
+          total_size: 1024000,
+          last_backup: new Date().toISOString(),
+          save_paths: ['/home/user/.steam/game1']
+        }
+      ]
+      loading.value = false
     }
 
     const scanGames = async () => {
-      try {
-        scanning.value = true
-        const result = await ScanGames()
-        await loadGames()
-        showToast(`Escaneo completado: ${result.total_games} juegos, ${result.new_games?.length || 0} nuevos`, 'success')
-      } catch (error) {
-        showToast('Error durante el escaneo: ' + error, 'error')
-      } finally {
+      scanning.value = true
+      showToast('Función de escaneo temporal - esperando bindings de Wails', 'info')
+      setTimeout(() => {
         scanning.value = false
-      }
+      }, 2000)
     }
 
     const createBackup = async (gameId) => {
-      try {
-        backingUp.value.push(gameId)
-        await CreateBackup(gameId)
-        await loadGames()
-        showToast('Backup creado exitosamente', 'success')
-      } catch (error) {
-        showToast('Error creando backup: ' + error, 'error')
-      } finally {
+      backingUp.value.push(gameId)
+      showToast('Función de backup temporal - esperando bindings de Wails', 'info')
+      setTimeout(() => {
         backingUp.value = backingUp.value.filter(id => id !== gameId)
-      }
+      }, 2000)
     }
 
     const addCustomGame = async () => {
-      try {
-        const patterns = newGame.value.patterns.split(',').map(p => p.trim())
-        await AddCustomGame(newGame.value.name, newGame.value.path, patterns)
-        await loadGames()
-        showAddGame.value = false
-        newGame.value = { name: '', path: '', patterns: '*.sav,*.save,*.dat' }
-        showToast('Juego agregado exitosamente', 'success')
-      } catch (error) {
-        showToast('Error agregando juego: ' + error, 'error')
-      }
+      showToast('Función agregar juego temporal - esperando bindings de Wails', 'info')
+      showAddGame.value = false
     }
 
     const removeGame = async (gameId) => {
-      if (confirm('¿Estás seguro de que quieres eliminar este juego de la lista?')) {
-        try {
-          await RemoveGame(gameId)
-          await loadGames()
-          showToast('Juego eliminado de la lista', 'success')
-        } catch (error) {
-          showToast('Error eliminando juego: ' + error, 'error')
-        }
-      }
+      showToast('Función eliminar juego temporal - esperando bindings de Wails', 'info')
     }
 
     const saveSettings = async () => {
-      try {
-        await UpdateConfig(config.value)
-        showSettings.value = false
-        showToast('Configuración guardada', 'success')
-      } catch (error) {
-        showToast('Error guardando configuración: ' + error, 'error')
-      }
+      showToast('Función guardar configuración temporal - esperando bindings de Wails', 'info')
+      showSettings.value = false
     }
 
     const viewGameDetails = (game) => {
@@ -412,7 +255,6 @@ export default {
     // Lifecycle
     onMounted(() => {
       loadGames()
-      loadConfig()
     })
 
     return {
