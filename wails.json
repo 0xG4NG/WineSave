@@ -10,7 +10,7 @@
     "viteConfigFile": "./vite.config.js"
   },
   "backend": {
-    "dir": "./app"
+    "dir": "./"
   },
   "author": {
     "name": "Game Save Backup",
