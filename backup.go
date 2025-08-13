@@ -38,10 +38,20 @@ type BackupConfig struct {
 	AutoBackup         bool          `json:"auto_backup"`
 }
 
+// BackupManager estructura principal con cliente PCGamingWiki
 type BackupManager struct {
 	Config        BackupConfig         `json:"config"`
 	DetectedGames map[string]*GameInfo `json:"detected_games"`
 	DatabasePath  string               `json:"database_path"`
+	PCGWClient    *PCGWClient          `json:"-"` // No serializar el cliente
+}
+
+// UserGameSelection representa la selección de un usuario
+type UserGameSelection struct {
+	Name         string            `json:"name"`
+	SelectedGame *GameSearchResult `json:"selected_game"`
+	CustomPath   string            `json:"custom_path"`
+	BackupPath   string            `json:"backup_path"`
 }
 
 type ScanResult struct {
@@ -188,9 +198,16 @@ var KnownGames = map[string]*GameInfo{
 
 // NewBackupManager crea una nueva instancia del manager de backups
 func NewBackupManager(configPath string) (*BackupManager, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		homeDir = "."
+	}
+
+	defaultBackupDir := filepath.Join(homeDir, "WineSaveBackups")
+
 	bm := &BackupManager{
 		Config: BackupConfig{
-			BackupDir:          "./game_backups",
+			BackupDir:          defaultBackupDir,
 			MaxBackups:         10,
 			CompressionEnabled: true,
 			ScanInterval:       time.Hour * 24,
@@ -199,6 +216,7 @@ func NewBackupManager(configPath string) (*BackupManager, error) {
 		},
 		DetectedGames: make(map[string]*GameInfo),
 		DatabasePath:  "game_saves.json",
+		PCGWClient:    NewPCGWClient(),
 	}
 
 	// Cargar configuración si existe
@@ -785,4 +803,116 @@ func (bm *BackupManager) AddCustomGame(name, savePath string, patterns []string)
 
 	log.Printf("Juego personalizado agregado: %s", name)
 	return bm.SaveDatabase()
+}
+
+// SearchGamesOnPCGW busca juegos en PCGamingWiki
+func (bm *BackupManager) SearchGamesOnPCGW(gameName string) ([]GameSearchResult, error) {
+	return bm.PCGWClient.SearchGames(gameName)
+}
+
+// AddGameFromPCGW agrega un juego desde PCGamingWiki con configuración del usuario
+func (bm *BackupManager) AddGameFromPCGW(selection UserGameSelection) error {
+	gameID := bm.generateGameID(selection.Name)
+
+	// Crear GameInfo desde la selección
+	game := &GameInfo{
+		ID:          gameID,
+		Name:        selection.Name,
+		Platform:    "pcgw", // PCGamingWiki source
+		SavePaths:   []string{},
+		Patterns:    SaveFilePatterns,
+		CustomPaths: []string{},
+		Metadata:    make(map[string]string),
+	}
+
+	// Si el usuario seleccionó un juego específico de PCGW
+	if selection.SelectedGame != nil {
+		game.Metadata["pcgw_page_id"] = selection.SelectedGame.PageID
+		game.Metadata["steam_app_id"] = selection.SelectedGame.SteamAppID
+		game.Metadata["release_date"] = selection.SelectedGame.ReleaseDate
+		game.Metadata["cover_url"] = selection.SelectedGame.CoverURL
+
+		// Usar las rutas de guardado de PCGW
+		for _, path := range selection.SelectedGame.SavePaths {
+			expandedPath := ExpandPath(path)
+			game.SavePaths = append(game.SavePaths, expandedPath)
+		}
+	}
+
+	// Si el usuario especificó una ruta personalizada
+	if selection.CustomPath != "" {
+		expandedPath := ExpandPath(selection.CustomPath)
+		game.SavePaths = append(game.SavePaths, expandedPath)
+		game.CustomPaths = append(game.CustomPaths, expandedPath)
+	}
+
+	// Validar que al menos una ruta existe
+	pathExists := false
+	for _, path := range game.SavePaths {
+		if _, err := os.Stat(path); err == nil {
+			pathExists = true
+			break
+		}
+	}
+
+	if !pathExists {
+		return fmt.Errorf("ninguna de las rutas de guardado especificadas existe")
+	}
+
+	// Agregar al manager
+	bm.DetectedGames[gameID] = game
+
+	// Actualizar información del juego
+	if err := bm.updateGameInfo(game); err != nil {
+		log.Printf("Error actualizando info del juego %s: %v", gameID, err)
+	}
+
+	log.Printf("Juego agregado desde PCGamingWiki: %s", selection.Name)
+	return bm.SaveDatabase()
+}
+
+// GetDefaultBackupPath devuelve la ruta por defecto para backups del usuario
+func (bm *BackupManager) GetDefaultBackupPath() string {
+	return bm.Config.BackupDir
+}
+
+// SetBackupPath permite al usuario cambiar la ruta de backup
+func (bm *BackupManager) SetBackupPath(newPath string) error {
+	expandedPath := ExpandPath(newPath)
+
+	// Crear el directorio si no existe
+	if err := os.MkdirAll(expandedPath, 0755); err != nil {
+		return fmt.Errorf("error creando directorio de backup: %v", err)
+	}
+
+	// Verificar que se puede escribir
+	testFile := filepath.Join(expandedPath, ".test_write")
+	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
+		return fmt.Errorf("no se puede escribir en el directorio especificado: %v", err)
+	}
+	os.Remove(testFile)
+
+	bm.Config.BackupDir = expandedPath
+	return nil
+}
+
+// ValidateGamePaths valida que las rutas de un juego existen
+func (bm *BackupManager) ValidateGamePaths(gameID string) ([]string, []string) {
+	game, exists := bm.DetectedGames[gameID]
+	if !exists {
+		return []string{}, []string{}
+	}
+
+	var validPaths, invalidPaths []string
+
+	for _, path := range game.SavePaths {
+		expandedPath := ExpandPath(path)
+		if _, err := os.Stat(expandedPath); err == nil {
+			validPaths = append(validPaths, expandedPath)
+		} else {
+			invalidPaths = append(invalidPaths, expandedPath)
+		}
+	}
+
+	return validPaths, invalidPaths
 }
