@@ -12,6 +12,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
+//go:embed frontend/*
+
 var assets embed.FS
 
 // App struct

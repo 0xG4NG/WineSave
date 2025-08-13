@@ -6,6 +6,10 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: true,
+    host: '127.0.0.1',
+    hmr: {
+      port: 3000,
+    }
   },
   build: {
     outDir: 'dist',
@@ -22,5 +26,9 @@ export default defineConfig({
     alias: {
       '@': '/src'
     }
+  },
+  // Configuración específica para Wails
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development')
   }
 })
