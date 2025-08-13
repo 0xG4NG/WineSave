@@ -1,0 +1,13 @@
+{
+  "backup_dir": "/home/desktop/WineSaveBackups",
+  "max_backups": 10,
+  "compression_enabled": true,
+  "scan_interval": 86400000000000,
+  "exclude_patterns": [
+    "*.tmp",
+    "*.log",
+    "*.cache",
+    "*.lock"
+  ],
+  "auto_backup": false
+}
