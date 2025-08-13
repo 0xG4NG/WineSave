@@ -177,15 +177,14 @@ func main() {
 		Frameless:         false,
 		StartHidden:       false,
 		HideWindowOnClose: false,
-		RGBA:              &options.RGBA{R: 27, G: 38, B: 54, A: 255}, // Color de fondo
+		BackgroundColour:  &options.RGBA{R: 27, G: 38, B: 54, A: 1},
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 255},
-		OnStartup:        app.OnStartup,
-		OnDomReady:       app.OnDomReady,
-		OnBeforeClose:    app.OnBeforeClose,
-		OnShutdown:       app.OnShutdown,
+		OnStartup:     app.OnStartup,
+		OnDomReady:    app.OnDomReady,
+		OnBeforeClose: app.OnBeforeClose,
+		OnShutdown:    app.OnShutdown,
 	})
 
 	if err != nil {
