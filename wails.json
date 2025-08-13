@@ -6,8 +6,7 @@
     "dir": "./frontend",
     "install": "npm install",
     "build": "npm run build",
-    "dev": "npm run dev",
-    "viteConfigFile": "./vite.config.js"
+    "dev": "npm run dev"
   },
   "backend": {
     "dir": "./"
